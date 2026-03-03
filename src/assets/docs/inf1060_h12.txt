@@ -1,0 +1,449 @@
+EXAM    INF1060    H12                                                joakimmj
+* ---------------------------------------------------------------------------- *
+* OPERATIVSYSTEMER
+
+** OS
+   - Distrubuted OS -> support for administartion of distributd resources
+   - Real-time OS -> systems with real-time requirements (cars etc)
+   - Embedded OS -> build into a device to control specific equipment
+
+   - Hoveddeler:
+        For bruker:
+                - Shell, filsystem, device management
+        'Usynlig':
+                - Prosessbehandling, minnebehandling, kommunikasjon med hardware
+
+   - Device management:
+        controll all devices (drivers)
+
+   - Systemkall
+        interface mellom OS og bruker
+        funksjonskall som kjører i kjernen
+
+   top-down view
+   - OS virker som 'extended machine'
+        gjemmer vanskelige detaljer og presenterer en virtuell maskin som er
+        letter å bruke.
+
+   bottom-up view
+   - OS virker som en ressurshåndterer (resource manager)
+        hvert program får tid/plass i ressursene
+
+   - "batch" os -> ingen krav til tid (ingen brukerinteraksjon)
+
+** Stakk (stack)
+   abstrakt datastruktur for midlertidig lagring av data, objekter eller
+   hendelser som tas ut én etter én basert på LIFO
+
+   legges på stack:
+        lokale variabler, instruksjonspekere, argumenter
+
+** OS-kjerner
+   - monolitiske os-kjerner:
+        Monolittiske kjerner bygger på at hele kjernen fungerer som ett
+        sammenvevd program der alle systemets funksjoner finnes inkludert.
+        Linux og FreeBSD er eksempler på operativsystemer som bygger på
+        monolittiske kjerner
+   - mikro-kjerne ("micro kernel"):
+        Mikrokjerner er bygget opp av et stort antall mindre komponenter som
+        kommuniserer mellom hverandre og tillater at komponenter legges til og
+        tas bort mens systemet eksekveres.
+        Operativsystemene QNX og Mac OS X bygger på mikrokjerner
+
+** Prosesser
+   kjøring av programmer
+
+*** fork()
+    pid_t fork(void) -> dupliseres kallende prosess
+    return-verdier:
+        - parent: barneprosessens PID (ved feil: -1)
+        - child: 0
+
+*** execve()
+    int execve(char *filename, char *params[], char *envp[])
+    -> kjører program som 'filename' peker på (i kallende prosess)
+    return-verdier:
+        - ingen returnverdi hvis vellykket (ved feil: -1)
+
+*** wait()
+    pid_t wait(int *status)
+    -> venter til en av barneprosessene termineres
+    return-verdier:
+        - dersom det ikke finnes noen barneprosesser: -1
+        - barneprosessens PID
+
+*** terminere
+    return, exit(int status), kill(pid_t pid, int sig)
+    status 0 = suksess
+
+*** getpid()
+    returverdier:
+        PID til kallende prosess (ved feil: null)
+
+** Prosesstilstander
+   READY, RUNNING, BLOCKED
+
+** Prosess vs. tråd
+   tråder er 'lightweight' prosesser
+   switching er billigere
+   kjøre parallelt inni en prosess
+
+** Interupts og Exceptions
+   Interupts (asynkron):
+        - signal som kaller på en interupthandler (fullførte diskoperasjoner etc)
+   Exceptions (synkron):
+        - kan avbryte program ved synkrone hendelser (TRAPS, FAULTS, ABORTS)
+        TRAPS -> break point in code (eks. systemkall), overflow
+        FAULTS -> deling på null, feil dataformat
+        ABORTS -> feil som ikke kan ordnes (eks hardware feil)
+
+** Scheduling og ressursutnyttelse
+*** CPU:
+    FCFS (first-come-first-serve) / FIFO (first-in-first-out):
+        fordel: enkel, prosesser får kjøre seg ferdig
+        ulempe: korte jobber må vente på lange
+    RR (Round-Robin)
+        alle prosesser får en timeslice
+        fordel: bytter mellom prosesser (fair)
+        ulempe: ingen er 'heldig' (får kjørt seg ferdig først)
+    Shortest job first
+        de korte prosessene først
+        fordel: får unna de korte prosessene
+        ulempe: lange prosesser kan stå i evig kø
+    Priority scheduling (hierarkisk CPU scheduler)
+        prosesser med høy prioritet kjører først
+
+    - avbrytbar (preemptive) CPU scheduler
+        er en mekanisme som kan avbryte den kjørende prosessen hvis høyere
+        prioritets prosesser venter i scheduleringskøen
+
+    - hva starter CPU scheduleren?
+        process creation/execution/waiting/termination
+
+*** DISK:
+    FCFS (first-come-first-serve) / FIFO (first-in-first-out):
+        fordel: enkel, prosesser får kjøre seg ferdig
+        ulempe: korte jobber må vente på lange
+    SSTF (Shortest-seek-time-first):
+        serves closest to disk-arm first
+    SCAN (elevator)
+        beveger lesehodet fra ende til ende og behandler på veien
+    NOOP
+        FCFS with request merging
+    CFQ (completely fair scheduler)
+        1 queue per process
+
+** Absolutt adressering
+   en måte å lese data ved å referere til 'byte numbers' i minnet
+   raskt
+   hardware har reserverte 'regioner'
+
+** Relativ adressering
+   adressen er uttrykt relativt til en 'base location'
+
+** Sideutbytting (paging)
+   minnet deles i blokker/'pages'. De ligger på disk eller i cachen.
+
+   pagefault- hvis ikke 'pagen' ligger på cachen
+   Systemet håndterer pagefaults ved å fryse kjørende prosess og se om 'pagen'
+   finnes. Dersom 'pagen' finnes, vil det skrives til cahcen og prosessen
+   starter igjen.
+
+*** Page replacement algorithms
+    FIFO
+    Second chance -> FIFO with 'reload'
+    LRU (least recently used)
+        replace the page that has the longest time since last reference
+    Clock -> second chance (circular)
+
+** Interprosess kommunikasjon
+
+*** Pipe
+    lager to 'file descriptors', reading(fd[0]) og writing(fd[1])
+
+*** Mailbox
+    lager en meldingskø (FIFO) -> meldinger lagret som sekvenser av 'bytes'
+
+*** Pipe vs. mailbox
+    message:
+        mailbox -> kan ha beskjeder av forskjellig typer
+        pipe -> ikke forskjellige typer
+    buffer:
+        mailbox: linked list of messages
+        pipe: one or mora pages storing messages
+    more than 2 processes:
+        mailbox: many can use mailbox
+        pipe: often (not linux) impies one sender/receiver
+
+*** Signaler
+    er i kontekst av os et software avbrudd ("interrupt") som kan sendes til
+    en prosess basert på en hendelse utenfor prosessens eget domene
+
+*** Delt minne ("shared memory")
+    Gir prosessene rask og effektiv mulighet til å kommunisere ved å kunne lese
+    og skrive til det samme minneområdet.
+
+** kontekstbytte ("context switch")
+   stopper kjørende prosess (lagrer) og gjenstarter annen prosess
+   årsak:
+        scheduler, interrupts osv.
+
+** Extents
+   Setter av en minneblokk, slik at man unngår fregmentering (oppdeling av
+   minnet)
+
+** Endianness
+   Big endian:
+        most significant bit first
+   Little endian:
+        least significant bit first
+
+** Virtuelt minne med paging
+   hver prosess skal tro at den har ubegrenset minne
+
+   design et minnesystem (tenk telefonkatalog)
+   10 bit - 10 bit - 12 bit
+
+** Minnehåndtering
+   Partisjon ved mottatt minne:
+   - fixed partitioning -> satte minne partisjoner
+   - dynamic partitioning -> partisjoner i 'run-time'
+        caompaction -> komprimerer (fyller 'hull' etter fjernede prosesser)
+   - buddy system -> blanding av fixed og dynamic
+        splitter til man har passende partisjoner
+
+** "Associative memory"/ "Translation lookaside buffer"
+   - hardware brikke paa MMU der mest frekvent brukte 'pages'
+
+** Boot (basic input/output system)
+   Master boot record:
+   - er lagret på en kjent lokasjon på disken og inneholder "boot" programmet
+
+** Inode
+   Metadatastruktur for å holde orden på datablokkene til en fil!
+
+** File allocation table (FAT)
+   bruker linking i tabell (chaining in map) for å håndtere blokker til en fil
+   lagret på disken
+
+** Heap
+   I forbindelse med organisering av minnet til en prosess -> dynamisk allokert
+   minne!
+
+** Aksesstid
+   søketid + rotasjonstid + overføringstid + andre forsinkelser
+
+   - disk -> søketid = flaskehals
+
+** Kontrollregisteret IA-32
+   intel 32-bit arkitektur
+
+
+* DATAKOMMUNIKASJON
+
+** Internet
+   'Network of networks'
+   Endesystemer -> overføringsmedia -> router -> ISP (Internet Service
+   Providers) -> protokoller (TCP, IP, HTTP, FTP, PPP)
+
+** Overføringsmedia
+   - Twisted Pair (TP)
+        tvinnede lederpar for å motvirke elektromagnetisk støy (interferens)
+   - Coaxial cable
+        leder omringet av beskyttende lag, skjerming (flettede metalltråder),
+        isolasjon -> unngå innslag av radiofrekvenser
+   - Fiber optic cable
+        lys
+
+** Multiplexing
+   Bestemmer hvilke signaler som skal ut.
+   - Tids multiplexing (TDM)
+        - hver kanal får en bestemt tidsluke
+        - ledig kapasitet i en kanal kan ikke utnyttes av en annen kanal
+   - Frekvens multiplexing (FDM)
+        - deler mediet inn i frekvensbånd, og hvert kanal har sitt frekvensbånd
+        - ledig kapasitet i kanal kan ikke utnyttes av en annen kanal
+   - Pakke multiplexing (statisk?)
+        - basert på adresser i pakkene (routing)
+
+** Lokalnett (LAN, "local area network")
+   - kobler endesystemer til internett
+   - ethernet/trådløst
+
+   nett-topologier?
+   organisering av linklaget i OSI-stacken?
+
+** Rutere
+   hovedkomponenter:
+     - port (inn/u)
+     - adressetaell
+   aktive lag:
+        fysisk lag, linklag, nettverkslag
+
+** Nettlaget
+   nettverkslaget -> ansvarlig for ende-til-ende transport
+        - adressering av maskiner
+        - framsending (forwarding)
+
+   finne adressen til subnett? -> network prefix - subnet number - host number
+   - eks:
+     129.240.002.35
+     35/2 -> 1
+     17/2 -> 1
+     8/2 -> 0
+     4/2 -> 0
+     2/2 -> 0
+     1/2 -> 1
+
+     => 00100011 (subnett = 001, host = 00011)
+
+
+   "gruppekringkasting" (multicast)
+        - sende data til en gruppe av endesystemer
+        - resultere i mindre belastning
+
+** Kontrollinformasjon
+   generelt format for rammer, pakker, meldinger?
+   lagene i avsender/mottaker-system?
+
+** Forbindelsesorientert vs. forbindelsesløs 
+   (connection-oriented vs. connectionless service)
+
+   - forbindelsesorientert (TCP)
+        Man må oprette kontakt, opprettholde kontakt og avslutte kontakt
+   - forbindelsesløs (UDP)
+        Vil sende uavhengig om det er kontakt
+        (kjekt ved bla. streaming)
+
+   funksjonalitet? fordeler/ulemper?
+
+** Protokoll
+   Definerer format, sendings- og mottakningsrekkefølge og en handling.
+   Legger til en "header" (informasjon) i hvert lag
+
+*** TCP/IP - protocol stack (referansemodell)
+    - application
+        eks: epost
+    - transport
+        TCP, UDP
+    - nettverk
+        IP
+    - (data) link
+        ppp (point-to-point protocol), Ethernet
+    - fysisk
+        bits "on the wire"
+
+*** OSI - modell (referansemodell)
+    ("All People Seem To Need Data Processing")
+    - application
+        eks: epost
+    - presentasjon:
+        oversetter mellom forskjellige formater
+        - XML, XDR
+        - gir platform-uavhengighet
+    - session
+        kontrollerer tilkobling
+        - RTP
+    - transport
+        TCP, UDP
+    - nettverk
+        IP
+    - (data) link
+        ppp (point-to-point protocol), Ethernet
+    - fysisk
+        bits "on the wire"
+
+*** IP - Internet Protocol
+    "best-effort"-overføring
+
+** Transportlaget
+   hovedoppgave å transportere data
+   prosess-til-prosess levering
+
+*** Transportlag - TCP
+    - connection-oriented service
+    - reliable, ordered, streamoriented
+        - loss: acknowledgements and retransmissions
+    - flytkontroll (flow controll)
+        - ikke send raskere enn mottaker kan motta
+    - opphopingskontroll (congestion control)
+        - sender saktere når nettverket er overbelastet
+    - applications:
+        - HTTP (WWW), FTP (file transfer), SMTP (email)
+        - telnet (remote login)
+
+    TCP sikrer at det alltid er mulig å skille mellom gamle og nye instanser av 
+    en forbindelse
+
+*** Transportlag - UDP
+    - connectionless service
+    - Unreliable, unordered, packetoriented data transfer
+        - loss: tap av beskjeder
+        - beskjeder ankommer akkurat slik de ble sendt
+    - ingen flytkontroll (no flow controll)
+        - send så fort som programmet ønsker
+    - ingen opphopingskontroll (no congestion control)
+        - ignorerer nettverksproblemer
+    - applications:
+        - Streame media, video konferanser, internett telefoni
+        - NTP (network time protocol)
+    - header:
+        - source port, destination port, lengde, sjekksum
+
+    Prosess-til-prosess kommunikasjon
+
+** Overførings-syntaks
+   Data må overføres i en overføringssyntaks som begge sider kan oppfatte på
+   samme måte
+
+   Marshalling/serialisering
+        - transformere minnerepresentasjonen av et objekt til et format som
+          egner seg for transmisjon (og lagring)
+        - typisk bruk mellom programmer og maskiner
+   - konvertering -> serialisering -> innpakking
+
+** Aksessnettverk
+   kobler endesystemene til Internettet!
+
+** Endesystem
+   en maskin eller et program i utkanten av nettet, som ikke har
+   nettverksoppgaver selv, men bruker nettet som infrastruktur!
+
+** Linklaget
+   Raskere linkteknologi -> overfør mer data per sekund (reisetiden forblir ca
+   den samme)!
+
+** Bro
+   - en bro videresender eller filtrerer en rammme ved å sammenlikne informasjon
+     i sin adressetabell med rammens lag 2 destinasjons-adresse!
+
+** Bro vs. Ruter
+   bro: statisk
+   ruter: kan interfere med pakkene (har funkasjonalitet)
+   ??
+
+** Switching
+   - linje(circuit)-switching
+     - trenger setup-fase
+     - dedikert ressurs (ingen deling)
+     - garantert at dataen kommer frem
+   - pakke(packet)-switching
+     - deler ressursene
+     - hver pakke bruker hele båndbredden
+             Eks: telefon-nett
+   - linje vs. pakke
+     - pakke-switching tillater flere brukere
+     - linje-switching -> garantert at dataen kommer frem
+     - pakke -> mindre 'waste'
+
+** ARP ("address resolution protocol")
+   brukes for å finne MAC-adressen til en mottaker når IP-adressen er kjent i
+   et LAN
+
+** pålitelig levering
+   feilfri levering, mottak av den komplette meldingen, levering i rett
+   rekkefølge, levering uten duplikater
+
+
+* ---------------------------------------------------------------------------- *
+/END/

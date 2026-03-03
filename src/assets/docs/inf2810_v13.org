@@ -1,0 +1,341 @@
+inf2810 v13                                                             joakimmj
+--------------------------------------------------------------------------------
+
+* TEORI
+** Order of evaluation
+*** Normal-order / lazy evaluation
+    - Ved /normal-order/ utsettes evalueringen av uttrykkene som angir
+      argumentene til de trengs i prosedyrekroppen og de kan dermed evalueres
+      flere ganger (om vi da ikke memoiserer).
+*** Applicative-order / eager evaluation
+    - Ved /applicative-order/ evalueres argumentene før en prosedyre anvendes,
+      de evalueres derfor kun en gang.
+*** Example
+    (define (p) (p))
+    (define (test x y) (if (= x 0) 0 y))
+    
+    Dersom vi da evaluerer;    
+    (test 0 (p))
+    
+    vil vi, ved;
+    - /applicative-order/ aldri få evaluert 'test' da evaluatoren vil stå
+      i en evig løkke da den prøver å evaluere '(p)'.
+    - /normal-order/ evaluere 'test' og siden vi ikke vil møte 'y'/'(p)',
+      få output = 0.
+
+** Streams
+   - Strømmer bruker lazy evaluation for å beregne sin 'cdr'.
+     Det vil si at evalueringen ikke vil skje før vi ber om det (on demand).
+     Strømmen blir definert ved at første element blir evaluert (dette er
+     altså et krav).
+
+** Iterative vs. recursive
+   - Rekursive prosesser vil samle opp verdier på vei til slutten,
+     og kalkulere utregningene på vei tilbake
+
+     1                     | (define (test a)
+     1 + 2                 |   (define (iter a)
+     1 + 2 + 3             |     (if (= a 0) 0
+     1 + 5                 |       (+ a (iter (- a 1)))))
+     6                     |   (iter a))
+
+   - Iterative (hale-rekursive) prosesser vil gjøre utregninene på vei ut
+     (krever da ofte ekstra argument for å lagre verdien)
+
+     1                     | (define (test a)
+     1 + 2 = 3             |   (define (iter a ans)
+     3 + 3 = 6             |     (if (= a 0) ans
+     .                     |       (iter (- a 1) (+ ans a)))) 
+     .                     |   (iter a 0))               
+
+** Environmental Model (omgivelsesmodell)
+   
+   (define foo 42)
+
+   (define (make-keeper)
+    (let ((kept ’()))
+      (lambda (x)
+       (set! kept (cons x kept))
+        kept)))
+ 
+   (define keeper (make-keeper))
+   (keeper foo)
+
+   global:
+   +-------------------------------+
+   | foo: 42                       |<----------------
+   | make-keeper: -----------------|----------> OO --
+   | keeper: -|                    |<-          | 
+   +-------------------------------+ |       param:
+              |       E1:            |       body:
+              OO----> +-----------+---        (let ((...)
+	      |       | kept: '() |
+	   param: x   +-----------+
+           body:               |       E2:
+	    (set! kept ...)   +------------+
+                              | kept: '(42)|
+                              +------------+
+
+** Memoize
+   Memoisering vil si at allerede utregnede uttrykk lagres i f.eks. en liste
+   (slik at de ikke må evalueres på nytt)
+** Destructive process
+   Dette er prosesser hvor man endrer på noe. I funksjonell programmering
+   skal man ved gitt input alltid få likt output. Dersom man destruktivt
+   endrer ting, vil man kunne få en mer dynamisk kode-form.
+   Dette kan føre til mutasjoner etc.. men kan være nødvendig i visse tilfeller.
+   set!, set-car! og set-cdr! er eksempler på destruktive prosedyrer.
+** Boks- og peker-notasjon
+
+   (define foo '(1 2 3))
+   (cons foo foo)
+
+   +--+
+   | -|-> +--+--+   +--+--+   +--+--+
+   |__|   | 1| -|-> | 2| -|-> | 3| \|
+   | -|-> +--+--+   +--+--+   +--+--+
+   +--+
+
+** Funksjonell programmering
+   Prosedyrer som kan sees som spesifikasjoner for å beregne matematisk
+   funksjoner;
+   - alltid samme resultat gitt samme argument
+   - beregninger utføres som funksjonelle transformasjoner av data (ikke
+     destruktive endringer)
+   - En prosedyre kalles for sin returverdi; uten side-effekter
+   - Semantikken til uttrykk er uavhengig av hvor/når de brukes
+** Innkapsling
+   - brukes for å opprette prosedyreobjekter som kan holde rede på verdier
+     som f.eks. en saldo;
+     
+     (define konto
+       (let ((saldo 0))
+         (lambda (proc . args) 
+           (set! saldo (apply proc saldo args))
+           saldo)))
+
+     (define joakim (konto))
+     (joakim + 100 200) -> 300
+     (joakim - 20) -> 280
+
+** Ring-buffer
+     ________________________
+     |                       |
+   +--+--+  +--+--+  +--+--+ |
+   | 1| -|->| 2| -|->| 3| -|--
+   +--+--+  +--+--+  +--+--+
+
+* KOMMANDOER
+** ABS
+   (abs -12) -> 12 ; absoluttverdi
+** APPEND
+   (append '(1 2 3) '(4 5 6)) -> (1 2 3 4 5 6)
+   (append 1 '(4 5 6)) -> #ERROR#
+   (append '(4 5 6) 1) -> (4 5 6 . 1)
+** APPLY
+   - Brukes for å utføre en prosedyre på en hel liste
+     (apply + 1 21 3 '(1 2 3 4 5)) -> 40
+     Apply tar virkårlig antall elementer og EN liste som 
+     siste argument.
+** AND
+   - Søker fra venstre returnerer #f hvis den møter en usann verdi
+** BEGIN
+   Brukes for å eksekvere kode sekvensielt.
+   I f.eks. if-setninger vil kun en linje kunne eksekveres
+   for true/false;
+   (if (null? list)
+     '()
+     (begin  <gjør noe>
+             <gjør noe>
+                ....   ))
+** BOOLEAN?
+   (boolean? #f) -> #t ; boolsk uttrykk
+** CAR
+   - (car '(1 2 3 4 5)) -> 1
+** CDR / REST
+   - (cdr '(1 2 3 4 5)) -> (2 3 4 5)
+     (rest '(1 2 3 4 5)) -> (2 3 4 5)
+** CONS 
+   (cons '(1 2 3) '(4 5 6)) -> ((1 2 3) 4 5 6)
+   (cons 1 '(4 5 6)) -> (1 4 5 6)
+   (cons '(4 5 6) 1) -> ((4 5 6) . 1)
+** OR
+   - Søker fra venstre returnerer #t hvis den møter en sann verdi
+** DEFINE
+   (define hva-som-helst 'tralala)
+   hva-som-helst -> tralala
+** DEFINE-SYNTAX
+   ; definerer en for-løkke ved hjelp av syntaks
+   (define-syntax for
+    (syntax-rules ()
+     ((_ pred var cond body ...)
+      (let loop ()
+       (if pred (begin body ... (set! var cond) (loop)))))))
+
+   (let ((i 0))
+    (for (< i 11) i (+ i 1)
+     (display i)
+     (display #\Space))
+    (newline))
+** DELAY, FORCE
+   (define a 10)
+   (define eval-aplus2 (delay (+ a 2)))
+   (set! a 20)
+   (force eval-aplus2)
+   ===> 22
+
+   (define a 10)
+   (define eval-aplus2 (+ a 2))
+   (set! a 20)
+   (force eval-aplus2)
+   ===> 12
+** DISPLAY
+   (display 'hei) -> hei ; skriver ut
+** EQ? EQUAL? EQV? = string=? char=?
+   - eq? evaluates to #f unless its parameters represent the same data 
+     object in memory (peker-likhet)
+   - eqv? is generally the same as eq? but treats primitive objects 
+     (e.g. characters and numbers) specially so that numbers that represent
+     the same value are eqv? even if they do not refer to the same object;
+   - equal? compares data structures such as lists, vectors and strings to 
+     determine if they have congruent structure and eqv? contents.
+   - string=? 
+     compare two strings
+   - string-ci=? 
+     the latter performs a case-independent
+   - char=? and char-ci=? compare characters
+   - = compares numbers
+** EVEN?
+   (even? 4) -> #t ; even number
+** EXACT
+   (exact? 1.2) ; -> #f
+** EXP
+   (exp 1) ->  2.718281828459045 ; e^1
+** EXPT
+   (expt 3 2) -> 16 ; 3^2
+** GCD
+   (gcd 48 42 212 8) -> 2 ; greatest common divisor
+** INTEGER?
+   (integer? 34) -> #t ;integer?
+** LCM
+   (lcm 1 2 3 4) -> 12 ; least common multiplier
+** LENGTH
+   (length '(12 34 45)) -> 3 ; lenge på listen
+** LIST
+   (list '(1 2 3) '(4 5 6)) -> ((1 2 3) (4 5 6))
+   (list 1 '(4 5 6)) -> (1 (4 5 6))
+   (list '(4 5 6) 1) -> ((4 5 6) 1)
+** LIST?
+   (list? '(1 2 3)) -> #t ; liste?
+** LIST-REF
+   (list-ref '(1 2 3 4 5) 1) -> 2 ; liste-objekt på plass n
+** LIST-TAIL
+   (list-tail '(1 4 2 2 34) 2) -> (2 2 34) ; returnerer halen etter n
+   (list-tail '(1 4 2 2 34) 0) -> (1 4 2 2 34) ; eller alt
+** MAP
+   - Transformerer en liste ved å utføre en funksjon på hver av
+     dens elementer.
+     (map square '(2 3 4)) -> (4 9 16)
+     (map + '(2 3 4) '(1 2 3)) -> (3 5 7)
+** MAX
+   (max 43 123 1 4 54) -> 123 ; finner største
+** MEMBER / MEMQ / MEMV
+   (memq 'red '(blue red shoes red blue socks)) -> (red shoes red blue socks)
+   (memv 'red '(blue red shoes red blue socks)) -> (red shoes red blue socks)
+   (member 'red '(blue red shoes red blue socks)) -> (red shoes red blue socks)
+** MIN
+   (min 43 123 1 4 54) -> 1 ; finner minste
+** MODULO
+   (modulo 12 5) -> 2 ; resten etter 12/5
+** NEWLINE
+   (newline) ; skriver ut linjeskift
+** NOT
+   (not #t) -> #f ; inverterer boolsk uttrykk
+** NULL?
+   (null? 0) -> #f
+   (null? '()) -> #t
+** NUMBER?
+   (number? 12) ; nummer?
+** ODD?
+   (odd? 3) -> #t ; oddetall?
+** PAIR?
+   (pair? '(a short list 12 3)) -> #t
+   (pair? (cons 1 2)) -> #t
+   (pair? '()) -> #f
+** POSITIVE / NEGATIVE / ZERO
+   (zero? 0) -> #t
+   (positive? 0) -> #f
+   (negative? 0) -> #f
+** PROCEDURE?
+   (procedure? *) ; prosedyre?
+** RATIONAL?
+   (rational? (sqrt -1)) -> #f ; rasjonelt nummer
+** REVERSE
+   - Reverserer en liste
+     (reverse '(1 2 3 4 5)) -> (5 4 3 2 1)
+     (reverse '(1 (5 6 7) 2 3 (8 9) 4 5)) -> (5 4 (8 9) 3 2 (5 6 7) 1)
+** ROUND / FLOOR / CEILING
+   (round 12.7) -> 13 ; avrunding
+   (round 12.3) -> 12
+   (floor 12.7) -> 12 ; runder ned
+   (ceiling 12.3) -> 13 ; runder opp
+** SET!
+   (define a '(1 2 4))
+   (set! a '(213)) -> a = (213)
+   (set! a 'haha) -> a = haha
+** SET-CAR!
+   ; man må ha evaluert (require r5rs)
+   (define list '(1 2 3 4 5))
+   (set-car! list 8)
+   list -> (8 2 3 4 5)
+** SET-CDR!
+   ; man må ha evaluert (require r5rs)
+   (define list '(1 2 3 4 5))
+   (set-cdr! list '(8 3))
+   list -> (1 8 3)
+   (set-cdr! list 'x)
+   list -> (1 . x)
+** SQRT
+   (sqrt 9) -> 3 ; kvadratrot
+** SYMBOL?
+   (symbol? 'd) -> #t  ; symbol?
+** VALUES
+   skriver ut verdien til alt med (newline)
+   (values 1 2 4 5 '(1 2 3) 'w "he" (+ 21 12))
+
+* SYNTAKS
+** IF
+   (if predikativ 'true -> do this' 'false -> do this')
+** COND
+   (cond ((predikativ) 'true -> do this')
+	 ((predikativ) 'true -> do this')
+	 (else 'do this'))
+** LET
+   (let ((variabel value) (variable2 value2))
+	'body')
+** LET LOOP
+   (let loop ((variabel value) (variable2 value2))
+	'body'(loop variabel variabel2))
+** FOR-EACH
+   (for-each proc list)
+
+   (for-each (lambda (x) (newline) (display x))
+	 (list 57 321 88))
+   ->
+   57
+   321
+   88
+** LAMBDA
+   (lambda (args) <body>) -> prosedyre
+** CASE
+   (case cmd
+        ((push!) <gjør noe>)
+        ((pop!)  <gjør noe>)
+        ((stack) <gjør noe>)
+        (else  <gjør noe>))
+** Arbitrary number of arguments
+   - For å lage en prosedyre som tar virkårlig antall argumenter;
+     (define (test a . b) <body>)
+     (test 12 2 3 4 12 31) -> a = 12, b = (2 3 4 12 31)
+
+------------------------------------[ END ]-------------------------------------

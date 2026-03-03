@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1">
+    <meta name="description" content="Notes and summaries from UiO">
+    <link rel="shortcut icon" type="image/x-icon" href="./assets/icon.ico">
+    <title>ᛃ Myrvoll.dev</title>
+    <style>
+        h1, h2 {
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+        .app-header {
+            display: flex;
+            height: 40px;
+            justify-content: space-between;
+            border: solid black 3px;
+            padding: 4px 20px;
+        }
+        .app-header a {
+            text-decoration: none;
+            color: black;
+        }
+        .app-content {
+            padding: 0 20px 20px 20px;
+        }
+        @media only screen and (max-width: 500px) {
+            .app-content {
+                padding: 0 0 10px 0;
+            }
+            .github-user {
+                display: none;
+            }
+        }
+        .course-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .course-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        .course-table td a {
+            margin-right: 10px;
+        }
+        .course-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .course-table tr:hover {
+            background-color: #ddd;
+        }
+        .course-table th {
+            padding: 12px 8px;
+            text-align: left;
+            background-color: black;
+            color: white;
+        }
+    </style>
+</head>
+<body style="margin: .3px; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;">
+    <header class="app-header">
+        <a href="./">
+            <h1 style="margin: 0;">ᛃ Myrvoll.dev</h1>
+        </a>
+        <a style="display: inline-flex; align-items: center;" href="https://github.com/joakimmj" target="_blank">
+            <svg height="32" viewBox="0 0 16 16" width="32" aria-hidden="true">
+                <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+            </svg>
+            <p class="github-user" style="margin-left: 10px;">joakimmj</p>
+        </a>
+    </header>
+    <main class="app-content">
+        <section>
+            <h2>Bachelor</h2>
+            <table id="bachelor-table" class="course-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Name</th>
+                        <th>Files</th>
+                    </tr>
+                <tbody></tbody>
+            </table>
+        </section>
+        <section>
+            <h2>Master</h2>
+            <table id="master-table" class="course-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Name</th>
+                        <th>Files</th>
+                    </tr>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+    <script>
+        function createLink(href, hrefTitle) {
+            var a = document.createElement("a");
+            a.appendChild(document.createTextNode(hrefTitle));
+            a.href = href;
+            a.target = "_blank";
+            return a;
+        }
+        function insertTableData(id, data = []) {
+            var table = document.getElementById(id);
+
+            data.forEach(function(rowData) {
+                var row = table.insertRow();
+                var titleCell = row.insertCell();
+                titleCell.innerHTML = rowData.title;
+                var descriptionCell = row.insertCell();
+                descriptionCell.innerHTML = rowData.description;
+                var files = rowData.files || [];
+                var fileCell = row.insertCell();
+                files.forEach(function(file) {
+                    fileCell.appendChild(createLink(file.href, file.text));
+                });
+            });
+        }
+        insertTableData("bachelor-table", [
+            {title: "EXPHIL", description: "Examen philosophicum", files: [{href: "./assets/docs/ExphilMultipleChoice.txt", text: ".txt"}, {href: "./docs/ExphilMultipleChoice.org", text: ".org"}]},
+            {title: "INF1000", description: "Introduction to object-oriented programming", files: [{href: "./assets/docs/INF1000_H11_PENSUM.pdf", text: ".pdf"}]},
+            {title: "INF1010", description: "Object oriented programming", files: [{href: "./assets/docs/INF1010_V12_PENSUM.pdf", text: ".pdf"}]},
+            {title: "INF1060", description: "Introduction to operating systems and data communications", files: [{href: "./assets/docs/inf1060_h12.txt", text: ".txt"}, {href: "./docs/INF1060_H12_Exam.org", text: ".org"}]},
+            {title: "INF1300", description: "Introduction to databases", files: [{href: "./assets/docs/INF1300_H12_PENSUM.pdf", text: ".pdf"}]},
+            {title: "INF1400", description: "Digital technology", files: [{href: "./assets/docs/INF1400_H11_PENSUM.pdf", text: ".pdf"}, {href: "./docs/inf1400_h14_pensum.pdf", text: ".pdf (rev h14)"}]},
+            {title: "INF1411", description: "Elektroniske systemer", files: [{href: "./assets/docs/INF1411_V12_PENSUM.pdf", text: ".pdf"}]},
+            {title: "INF1510", description: "Bruksorientert design", files: [{href: "https://www.youtube.com/watch?v=0qIdMNMKYGs", text: "YouTube"}]},
+            {title: "INF2220", description: "Algorithms and data structures", files: [{href: "./assets/docs/INF2220-kompendium.pdf", text: ".pdf (larstvei)"}]},
+            {title: "INF2270", description: "Computer architecture", files: [{href: "./assets/docs/inf2270_v13.pdf", text: ".pdf"}]},
+            {title: "INF2810", description: "Functional programming ", files: [{href: "./assets/docs/inf2810_v13.txt", text: ".txt"}, {href: "./docs/inf2810_v13.org", text: ".org"}]},
+            {title: "INF3331", description: "Problemløsning med høynivå-språk", files: [{href: "./assets/docs/inf3331_h13.pdf", text: ".pdf"}]},
+            {title: "INF3400", description: "Digital mikroelektronikk", files: [{href: "./assets/docs/inf3400_v13.pdf", text: ".pdf"}]},
+            {title: "INF3430", description: "Digital systemkonstruksjon", files: [{href: "./assets/docs/inf3430_h13.pdf", text: ".pdf"}]},
+            {title: "INF3470", description: "Digital signalbehandling", files: []},
+            {title: "INF3480", description: "Introduction to robotics", files: []},
+            {title: "INF3490", description: "Biologically inspired computing", files: [{href: "./assets/docs/inf3490_h13.pdf", text: ".pdf"}]},
+            {title: "MAT1100", description: "Calculus", files: [{href: "./assets/docs/MAT1100_H11_PENSUM.pdf", text: ".pdf"},{href: "./docs/MAT1100_FORMELSAMLING.pdf", text: ".pdf (formelsamling)"}]},
+            {title: "MAT1110", description: "Calculus and linear algebra", files: [{href: "./assets/docs/MAT1110_V12_PENSUM.pdf", text:".pdf"},{href: "./docs/MAT1110_FORMELSAMLING.pdf", text: ".pdf (formelsamling)"}]},
+        ]);
+        insertTableData("master-table", [
+            {title: "FYS4240", description: "Computer based instrumentation and micro controllers", files: []},
+            {title: "INF4130", description: "Algoritmer: Design og effektivitet", files: [{href: "./assets/docs/inf4130_h14.pdf", text: ".pdf"}]},
+            {title: "INF4500", description: "Rapid Prototyping", files: []},
+            {title: "INF4820", description: "Algorithms for artificial intelligence and natural language processing", files: [{href: "./assets/docs/inf4820_h14.pdf", text: ".pdf"}]},
+            {title: "INF5390", description: "Kunstig intelligens", files: [{href: "./assets/docs/inf5390_v14.pdf", text: ".pdf"}]},
+            {title: "INF5750", description: "Open source software development", files: [{href: "https://github.com/joakimmj/Wapp", text: "GitHub"}]},
+            {title: "UNIK4690", description: "Maskinsyn", files: [{href: "./assets/docs/unik4690_v15.pdf", text: ".pdf"},{href: "https://www.youtube.com/watch?v=pZpGllg0Zdc", text: "YouTube"}]},
+            {title: "Thesis", description: "How to write a thesis", files: [{href: "./assets/docs/thesis-howto.pdf", text: ".pdf"}]},
+            {title: "Thesis", description: "Testing in pig intestines", files: [{href: "https://youtu.be/3zZ-RwPeLpI", text: "YouTube"}]},
+            {title: "Thesis", description: "Integration and optimization of propulsion systems in endoscopic capsules", files: [{href: "./assets/docs/joakimmj-thesis.pdf", text: ".pdf"}]},
+        ]);
+    </script>
+</body>
+</html>
